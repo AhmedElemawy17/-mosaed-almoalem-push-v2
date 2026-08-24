@@ -1,0 +1,17 @@
+{
+  "name": "mosaed-push-worker",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "generate-vapid": "node scripts/generate-vapid.mjs"
+  },
+  "dependencies": {
+    "@mmmike/web-push": "^1.3.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.30.0"
+  }
+}

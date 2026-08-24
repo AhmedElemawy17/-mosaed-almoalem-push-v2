@@ -1,0 +1,12 @@
+name = "mosaed-push-worker"
+main = "worker.js"
+compatibility_date = "2026-08-24"
+
+[vars]
+SUPABASE_URL = "https://kqaxywdfrccibxqskilz.supabase.co"
+VAPID_PUBLIC_KEY = "REPLACE_WITH_VAPID_PUBLIC_KEY"
+VAPID_SUBJECT = "mailto:YOUR_EMAIL@example.com"
+
+# Secrets (do NOT put the private key or service-role key in this file):
+# wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+# wrangler secret put VAPID_PRIVATE_KEY
