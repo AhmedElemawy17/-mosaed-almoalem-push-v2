@@ -6,79 +6,305 @@
 <title>صفحة الطالب — مساعد المعلم</title>
 <style>
 body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#f5f7fb;color:#172033}
-.wrap{max-width:760px;margin:auto;padding:18px}.hero,.card{background:#fff;border:1px solid #e4e8f0;border-radius:20px;padding:18px;margin:12px 0;box-shadow:0 5px 18px rgba(20,30,50,.05)}
-.hero{background:#eefaf5;border-color:#b8e4d0}.hero h1{margin:0 0 6px}.muted{color:#697386}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:#f7f8fb;border-radius:14px;padding:12px;text-align:center}.stat b{display:block;font-size:20px;margin-bottom:4px}
-.row{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #edf0f4;padding:10px 0}.row:last-child{border-bottom:0}
-.badge{display:inline-block;padding:4px 9px;border-radius:999px;background:#eef2ff}.ok{background:#eaf8f0;color:#16734a}.warn{background:#fff5df;color:#9a6400}.err{background:#fff0f0;color:#a12b2b}
-button{border:0;border-radius:12px;padding:11px 14px;font-weight:800;cursor:pointer}.primary{background:#2867df;color:#fff;width:100%}
-.notice{background:#f7f8fb;padding:12px;border-radius:14px;margin-top:10px}.loading{text-align:center;padding:30px}
+.wrap{max-width:760px;margin:auto;padding:18px}
+.hero,.card{background:#fff;border:1px solid #e4e8f0;border-radius:20px;padding:18px;margin:12px 0;box-shadow:0 5px 18px rgba(20,30,50,.05)}
+.hero{background:#eefaf5;border-color:#b8e4d0}
+.hero h1{margin:0 0 6px}
+.muted{color:#697386}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:#f7f8fb;border-radius:14px;padding:12px;text-align:center}
+.stat b{display:block;font-size:20px;margin-bottom:4px}
+.row{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #edf0f4;padding:10px 0}
+.row:last-child{border-bottom:0}
+.badge{display:inline-block;padding:4px 9px;border-radius:999px;background:#eef2ff}
+.ok{background:#eaf8f0;color:#16734a}
+.warn{background:#fff5df;color:#9a6400}
+.err{background:#fff0f0;color:#a12b2b}
+button{border:0;border-radius:12px;padding:11px 14px;font-weight:800;cursor:pointer}
+.primary{background:#2867df;color:#fff;width:100%}
+.notice{background:#f7f8fb;padding:12px;border-radius:14px;margin-top:10px}
+.loading{text-align:center;padding:30px}
 @media(max-width:520px){.stats{grid-template-columns:1fr 1fr}}
 </style>
 </head>
+
 <body>
 <div id="root"><div class="loading">جاري تحميل صفحة الطالب…</div></div>
+
 <script>
 "use strict";
+
 const SUPABASE_URL="https://kqaxywdfrccibxqskilz.supabase.co";
-  const SUPABASE_PUBLISHABLE_KEY="sb_publishable_Kp6YXbM_WGWDIlSKscB-Xg_vnAoumT0";
-const PUSH_WORKER_URL = "https://mosaed-almoalem-push-v2.ahmedalemaway000.workers.dev";
+const SUPABASE_PUBLISHABLE_KEY="sb_publishable_Kp6YXbM_WGWDIlSKscB-Xg_vnAoumT0";
+const PUSH_WORKER_URL="https://mosaed-almoalem-push-v2.ahmedalemaway000.workers.dev";
+
 const params=new URLSearchParams(location.search);
 const studentCode=params.get("studentCode")||"";
-function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
-function arr(v){return Array.isArray(v)?v:[]}
-function money(v){return Number(v||0).toLocaleString("ar-EG")+" ج.م";}
+
+function esc(v){
+  return String(v??"").replace(/[&<>"']/g,c=>({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    "\"":"&quot;",
+    "'":"&#39;"
+  }[c]));
+}
+
+function arr(v){
+  return Array.isArray(v)?v:[];
+}
+
+function money(v){
+  return Number(v||0).toLocaleString("ar-EG")+" ج.م";
+}
+
 async function load(){
-  if(!studentCode){renderError("رابط الطالب غير مكتمل. افتح الرابط الذي أرسله لك المعلم.");return}
+
+  if(!studentCode){
+    renderError("رابط الطالب غير مكتمل. افتح الرابط الذي أرسله لك المعلم.");
+    return;
+  }
+
   try{
-    const r=await fetch(SUPABASE_URL+"/rest/v1/student_public?student_code=eq."+encodeURIComponent(studentCode)+"&select=*&limit=1",
-      {headers:{apikey:SUPABASE_PUBLISHABLE_KEY}});
+
+    const r=await fetch(
+      SUPABASE_URL+
+      "/rest/v1/public_student_view?student_code=eq."+
+      encodeURIComponent(studentCode)+
+      "&select=*&limit=1",
+      {
+        headers:{
+          apikey:SUPABASE_PUBLISHABLE_KEY
+        }
+      }
+    );
+
     const rows=await r.json();
-    if(!r.ok||!rows.length){renderError("لم يتم العثور على بيانات الطالب. قد يكون الرابط غير صحيح أو لم يتم نشر البيانات بعد.");return}
+
+    if(!r.ok){
+      console.error("Supabase error:",rows);
+      renderError("تعذر تحميل بيانات الطالب الآن.");
+      return;
+    }
+
+    if(!rows.length){
+      renderError("لم يتم العثور على بيانات الطالب. تأكد من أن رابط الطالب صحيح.");
+      return;
+    }
+
     render(rows[0]);
-  }catch(e){renderError("تعذر تحميل البيانات الآن. حاول مرة أخرى.");console.error(e)}
+
+  }catch(e){
+
+    console.error(e);
+    renderError("تعذر تحميل البيانات الآن. حاول مرة أخرى.");
+
+  }
 }
-function renderError(msg){root.innerHTML='<div class="wrap"><div class="card"><h2>⚠️ تعذر فتح الصفحة</h2><p>'+esc(msg)+'</p></div></div>'}
-function render(d){
-  const a=arr(d.attendance),g=arr(d.grades),p=arr(d.payments),f=arr(d.daily_followup||d.daily_followup);
-  const present=a.filter(x=>x.status==="present").length, absent=a.filter(x=>x.status==="absent").length;
-  const paid=p.reduce((s,x)=>s+Number(x.amount||x.paid||0),0), total=Number(d.monthly_fee||d.total||0);
-  const remaining=Math.max(0,total-paid);
-  const grades=g.slice().reverse().map(x=>'<div class="row"><div><b>'+esc(x.exam||"امتحان")+'</b><div class="muted">'+esc(x.date||"")+'</div></div><b>'+esc(x.score)+' / '+esc(x.total)+'</b></div>').join("")||'<div class="muted">لا توجد نتائج امتحانات.</div>';
-  const follow=f.slice().sort((x,y)=>String(y.date).localeCompare(String(x.date))).map(x=>'<div class="row"><div><b>📅 '+esc(x.date)+'</b><div class="muted">الحضور: '+esc(label(x.attendance))+' • الواجب: '+esc(label(x.homework))+'</div></div><span class="badge">'+esc(label(x.level))+'</span></div>').join("")||'<div class="muted">لا توجد متابعة يومية مسجلة.</div>';
-  const teacher=d.teacher_info||{};
-  root.innerHTML='<div class="wrap">'+
-    '<div class="hero"><h1>📚 '+esc(teacher.centerName||"مساعد المعلم")+'</h1><div class="muted">صفحة متابعة الطالب</div></div>'+
-    '<div class="card"><h2>👨‍🎓 '+esc(d.student_name||"الطالب")+'</h2><p>ولي الأمر: <b>'+esc(d.parent_name||"غير مسجل")+'</b></p><p>المجموعة: <b>'+esc(d.group_name||"غير محددة")+'</b></p><p>المستوى: <b>'+esc(d.level||"لم يحدد")+'</b></p></div>'+
-    '<div class="stats"><div class="stat"><b>'+present+'</b>حضور</div><div class="stat"><b>'+absent+'</b>غياب</div><div class="stat"><b>'+g.length+'</b>اختبارات</div></div>'+
-    '<div class="card"><h2>📊 نتائج الامتحانات</h2>'+grades+'</div>'+
-    '<div class="card"><h2>📋 المتابعة اليومية</h2>'+follow+'</div>'+
-    '<div class="card"><h2>💰 الحالة المالية</h2><div class="row"><span>المدفوع</span><b>'+money(paid)+'</b></div><div class="row"><span>المطلوب</span><b>'+money(total)+'</b></div><div class="row"><span>المتبقي</span><b>'+money(remaining)+'</b></div></div>'+
-    '<div class="card"><h2>🔔 إشعارات الطالب</h2><p class="muted">فعّل الإشعارات لاستقبال التنبيهات من المعلم.</p><button class="primary" onclick="enableNotifications()">تفعيل الإشعارات</button><div id="pushMsg" class="notice"></div></div>'+
+
+function renderError(msg){
+
+  root.innerHTML=
+    '<div class="wrap">'+
+      '<div class="card">'+
+        '<h2>⚠️ تعذر فتح الصفحة</h2>'+
+        '<p>'+esc(msg)+'</p>'+
+      '</div>'+
     '</div>';
-  window.__publicStudentContext={account_code:d.account_code||"",student_code:d.student_code||studentCode};
 }
-function label(k){return ({present:"حاضر",absent:"غائب",done:"تم",no:"لم يتم",excellent:"ممتاز",good:"جيد",needs:"يحتاج متابعة",verygood:"جيد جدًا",acceptable:"مقبول",medium:"متوسط",pending:"غير مسجل"}[k]||"غير مسجل")}
-function b64(v){const pad="=".repeat((4-v.length%4)%4),s=(v+pad).replace(/-/g,"+").replace(/_/g,"/"),raw=atob(s),o=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)o[i]=raw.charCodeAt(i);return o}
+
+function render(d){
+
+  const a=arr(d.attendance);
+  const g=arr(d.grades);
+  const p=arr(d.payments);
+
+  const present=a.filter(x=>x.status==="present").length;
+  const absent=a.filter(x=>x.status==="absent").length;
+
+  const paid=p.reduce(
+    (s,x)=>s+Number(x.amount||x.paid||0),
+    0
+  );
+
+  const grades=g.slice().reverse().map(x=>
+    '<div class="row">'+
+      '<div>'+
+        '<b>'+esc(x.exam||"امتحان")+'</b>'+
+        '<div class="muted">'+esc(x.date||"")+'</div>'+
+      '</div>'+
+      '<b>'+esc(x.score??"")+' / '+esc(x.total??"")+'</b>'+
+    '</div>'
+  ).join("") ||
+  '<div class="muted">لا توجد نتائج امتحانات.</div>';
+
+  const teacher=d.teacher_info||{};
+
+  root.innerHTML=
+    '<div class="wrap">'+
+
+      '<div class="hero">'+
+        '<h1>📚 '+esc(teacher.centerName||"مساعد المعلم")+'</h1>'+
+        '<div class="muted">صفحة متابعة الطالب</div>'+
+      '</div>'+
+
+      '<div class="card">'+
+        '<h2>👨‍🎓 '+esc(d.student_name||"الطالب")+'</h2>'+
+        '<p>ولي الأمر: <b>'+esc(d.parent_name||"غير مسجل")+'</b></p>'+
+        '<p>المجموعة: <b>'+esc(d.group_name||"غير محددة")+'</b></p>'+
+      '</div>'+
+
+      '<div class="stats">'+
+        '<div class="stat"><b>'+present+'</b>حضور</div>'+
+        '<div class="stat"><b>'+absent+'</b>غياب</div>'+
+        '<div class="stat"><b>'+g.length+'</b>اختبارات</div>'+
+      '</div>'+
+
+      '<div class="card">'+
+        '<h2>📊 نتائج الامتحانات</h2>'+
+        grades+
+      '</div>'+
+
+      '<div class="card">'+
+        '<h2>💰 الحالة المالية</h2>'+
+        '<div class="row">'+
+          '<span>المدفوع</span>'+
+          '<b>'+money(paid)+'</b>'+
+        '</div>'+
+      '</div>'+
+
+      '<div class="card">'+
+        '<h2>🔔 إشعارات الطالب</h2>'+
+        '<p class="muted">فعّل الإشعارات لاستقبال التنبيهات من المعلم.</p>'+
+        '<button class="primary" onclick="enableNotifications()">'+
+          'تفعيل الإشعارات'+
+        '</button>'+
+        '<div id="pushMsg" class="notice"></div>'+
+      '</div>'+
+
+    '</div>';
+
+  window.__publicStudentContext={
+    account_code:d.account_code||"",
+    student_code:d.student_code||studentCode
+  };
+}
+
+function b64(v){
+
+  const pad="=".repeat((4-v.length%4)%4);
+  const s=(v+pad).replace(/-/g,"+").replace(/_/g,"/");
+  const raw=atob(s);
+  const o=new Uint8Array(raw.length);
+
+  for(let i=0;i<raw.length;i++){
+    o[i]=raw.charCodeAt(i);
+  }
+
+  return o;
+}
+
 async function enableNotifications(){
+
   const msg=document.getElementById("pushMsg");
+
   try{
-    if(!("Notification"in window)||!("serviceWorker"in navigator)||!("PushManager"in window))throw Error("المتصفح لا يدعم إشعارات Push.");
-    if(location.protocol!=="https:")throw Error("الإشعارات تحتاج HTTPS.");
-    if(PUSH_WORKER_URL.includes("REPLACE-WITH-YOUR"))throw Error("لم يتم وضع رابط Worker الإشعارات بعد.");
+
+    if(
+      !("Notification"in window)||
+      !("serviceWorker"in navigator)||
+      !("PushManager"in window)
+    ){
+      throw Error("المتصفح لا يدعم إشعارات Push.");
+    }
+
+    if(location.protocol!=="https:"){
+      throw Error("الإشعارات تحتاج HTTPS.");
+    }
+
     const reg=await navigator.serviceWorker.register("./sw.js");
+
     const permission=await Notification.requestPermission();
-    if(permission!=="granted")throw Error("لم يتم السماح بالإشعارات.");
-    const kr=await fetch(PUSH_WORKER_URL.replace(/\/$/,"")+"/vapid-public-key"); const kj=await kr.json();
-    if(!kr.ok||!kj.publicKey)throw Error(kj.error||"تعذر الحصول على مفتاح VAPID.");
+
+    if(permission!=="granted"){
+      throw Error("لم يتم السماح بالإشعارات.");
+    }
+
+    const kr=await fetch(
+      PUSH_WORKER_URL.replace(/\/$/,"")+
+      "/vapid-public-key"
+    );
+
+    const kj=await kr.json();
+
+    if(!kr.ok||!kj.publicKey){
+      throw Error(
+        kj.error||
+        "تعذر الحصول على مفتاح VAPID."
+      );
+    }
+
     let sub=await reg.pushManager.getSubscription();
-    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(kj.publicKey)});
-    const j=sub.toJSON(),keys=j.keys||{};
-    const sr=await fetch(PUSH_WORKER_URL.replace(/\/$/,"")+"/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({account_code:window.__publicStudentContext.account_code,student_code:window.__publicStudentContext.student_code,endpoint:sub.endpoint,p256dh:keys.p256dh,auth:keys.auth})});
+
+    if(!sub){
+
+      sub=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:b64(kj.publicKey)
+      });
+
+    }
+
+    const j=sub.toJSON();
+    const keys=j.keys||{};
+
+    const sr=await fetch(
+      PUSH_WORKER_URL.replace(/\/$/,"")+
+      "/subscribe",
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          account_code:
+            window.__publicStudentContext.account_code,
+
+          student_code:
+            window.__publicStudentContext.student_code,
+
+          endpoint:sub.endpoint,
+
+          p256dh:keys.p256dh,
+
+          auth:keys.auth
+        })
+      }
+    );
+
     const sj=await sr.json();
-    if(!sr.ok||!sj.ok)throw Error(sj.error||"تعذر حفظ الاشتراك.");
-    msg.textContent="تم تفعيل الإشعارات بنجاح ✅";msg.className="notice ok";
-  }catch(e){msg.textContent=e.message||String(e);msg.className="notice err"}
+
+    if(!sr.ok||!sj.ok){
+      throw Error(
+        sj.error||
+        "تعذر حفظ الاشتراك."
+      );
+    }
+
+    msg.textContent="تم تفعيل الإشعارات بنجاح ✅";
+    msg.className="notice ok";
+
+  }catch(e){
+
+    console.error(e);
+
+    msg.textContent=e.message||String(e);
+    msg.className="notice err";
+
+  }
 }
+
 load();
 </script>
 </body>
